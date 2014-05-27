@@ -8,9 +8,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"text/template"
 )
-
-const IMPORT_PATH = "github.com/repp/armadillo"
 
 var newCmd = &Command{
 	UsageLine: "new [app_path]",
@@ -31,6 +30,7 @@ var (
 	appPath      string
 	appName      string
 	skeletonPath string
+	templateData map[string]interface{}
 )
 
 func init() {
@@ -82,6 +82,7 @@ func setAppPaths(args []string) {
 	appPath = filepath.Join(srcRoot, filepath.FromSlash(importPath))
 	appName = filepath.Base(appPath)
 	skeletonPath = filepath.Join(armadilloPkg.Dir, "skeleton")
+	//templateData["appPath"] = appPath
 
 }
 
@@ -92,10 +93,10 @@ func createSkeletonApp() {
 		errorf(err.Error())
 		return
 	}
-	copyDir(appPath, skeletonPath)
+	copyDir(skeletonPath)
 }
 
-func copyDir(destDir, srcDir string) error {
+func copyDir(srcDir string) error {
 	var fullSrcDir string
 	// Handle symlinked directories.
 	f, err := os.Lstat(srcDir)
@@ -108,33 +109,41 @@ func copyDir(destDir, srcDir string) error {
 		fullSrcDir = srcDir
 	}
 
-	return filepath.Walk(fullSrcDir, func(srcPath string, info os.FileInfo, err error) error {
-		// Get the relative path from the source base, and the corresponding path in
-		// the dest directory.
-		relSrcPath := strings.TrimLeft(srcPath[len(fullSrcDir):], string(os.PathSeparator))
-		destPath := path.Join(destDir, relSrcPath)
+	return filepath.Walk(fullSrcDir, walkDir)
+}
 
-		// Skip dot files and dot directories.
-		if strings.HasPrefix(relSrcPath, ".") {
-			if info.IsDir() {
-				return filepath.SkipDir
-			}
-			return nil
-		}
+func walkDir(srcPath string, info os.FileInfo, err error) error {
+	// Get the relative path from the source base, and the corresponding path in
+	// the dest directory.
+	relSrcPath := strings.TrimLeft(srcPath[len(skeletonPath):], string(os.PathSeparator))
+	destPath := path.Join(appPath, relSrcPath)
 
-		// Create a subdirectory if necessary.
+	// Skip dot files and dot directories.
+	if strings.HasPrefix(relSrcPath, ".") {
 		if info.IsDir() {
-			err := os.MkdirAll(path.Join(destDir, relSrcPath), 0777)
-			if !os.IsExist(err) {
-				panicOnError(err, "Failed to create directory")
-			}
-			return nil
+			return filepath.SkipDir
 		}
-
-		// Copy files over
-		copyFile(destPath, srcPath)
 		return nil
-	})
+	}
+
+	// Create a subdirectory if necessary.
+	if info.IsDir() {
+		err := os.MkdirAll(path.Join(appPath, relSrcPath), 0777)
+		if !os.IsExist(err) {
+			panicOnError(err, "Failed to create directory")
+		}
+		return nil
+	}
+
+	// If this file ends in ".template", render it as a template.
+	if strings.HasSuffix(relSrcPath, ".template") {
+		copyTemplateFile(destPath[:len(destPath)-len(".template")], srcPath, templateData)
+		return nil
+	}
+
+	// Copy files over
+	copyFile(destPath, srcPath)
+	return nil
 }
 
 func copyFile(destFilename, srcFilename string) {
@@ -153,4 +162,18 @@ func copyFile(destFilename, srcFilename string) {
 
 	err = srcFile.Close()
 	panicOnError(err, "Failed to close file "+srcFile.Name())
+}
+
+func copyTemplateFile(destFilename, srcFilename string, data map[string]interface{}) {
+	tmpl, err := template.ParseFiles(srcFilename)
+	panicOnError(err, "Failed to parse template "+srcFilename)
+
+	f, err := os.Create(destFilename)
+	panicOnError(err, "Failed to create "+destFilename)
+
+	err = tmpl.Execute(f, data)
+	panicOnError(err, "Failed to render template "+srcFilename)
+
+	err = f.Close()
+	panicOnError(err, "Failed to close "+f.Name())
 }

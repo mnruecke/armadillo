@@ -9,6 +9,8 @@ import (
 	"text/template"
 )
 
+const IMPORT_PATH = "github.com/repp/armadillo"
+
 func main() {
 	flag.Usage = func() { showUsage(1) }
 	flag.Parse()
@@ -21,7 +23,7 @@ func main() {
 		if len(args) > 1 {
 			for _, cmd := range commands {
 				if cmd.Name() == args[1] {
-					tmpl(os.Stdout, helpTemplate, cmd)
+					writeTemplate(os.Stdout, helpTemplate, cmd)
 					return
 				}
 			}
@@ -40,11 +42,11 @@ func main() {
 }
 
 func showUsage(exitCode int) {
-	tmpl(os.Stderr, usageTemplate, commands)
+	writeTemplate(os.Stderr, usageTemplate, commands)
 	os.Exit(exitCode)
 }
 
-func tmpl(w io.Writer, text string, data interface{}) {
+func writeTemplate(w io.Writer, text string, data interface{}) {
 	t := template.New("top")
 	template.Must(t.Parse(text))
 	if err := t.Execute(w, data); err != nil {
@@ -53,7 +55,7 @@ func tmpl(w io.Writer, text string, data interface{}) {
 }
 
 func errorf(format string, args ...interface{}) {
-	// Ensure the user's command prompt starts on the next line.
+	// Start command prompt on the next line.
 	if !strings.HasSuffix(format, "\n") {
 		format += "\n"
 	}
