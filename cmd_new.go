@@ -82,7 +82,9 @@ func setAppPaths(args []string) {
 	appPath = filepath.Join(srcRoot, filepath.FromSlash(importPath))
 	appName = filepath.Base(appPath)
 	skeletonPath = filepath.Join(armadilloPkg.Dir, "skeleton")
-	//templateData["appPath"] = appPath
+	templateData = map[string]interface{}{
+		"AppName": appName,
+	}
 
 }
 
