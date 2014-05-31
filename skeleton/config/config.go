@@ -4,7 +4,7 @@ import "github.com/repp/armadillo/server"
 
 var development = server.Config {
 	"port": 3000,
-	"serve_static_files": false,
+	"serve_static_files": true,
 }
 
 var production = server.Config {
