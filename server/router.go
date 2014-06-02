@@ -2,20 +2,21 @@ package server
 
 import (
 	"fmt"
-	"reflect"
+	"net/http"
 	"strings"
 )
 
 type Router struct {
-	Routes []Route
+	Routes map[string]map[string]httpHandler
 }
 
 type Route struct {
-	HttpMethod string
-	Path       string
-	Handler    interface{}
+	Method  string
+	Path    string
+	Handler httpHandler
 }
 
+type httpHandler func(http.ResponseWriter, *http.Request)
 type Set map[string]struct{}
 
 func NewSet(elements ...string) Set {
@@ -31,7 +32,10 @@ type MethodRules struct {
 	Forbid Set
 }
 
-var tmpFunc func() = func() {}
+var tmpFunc httpHandler = func(rw http.ResponseWriter, r *http.Request) {
+	rw.Write([]byte("Hello World!"))
+	rw.WriteHeader(200)
+}
 
 var allModelMethods = map[string]Route{
 	"Create":    Route{"POST", "/{{.ModelName}}", tmpFunc},
@@ -49,58 +53,58 @@ func (r *Router) Model(publicName string, modelInstance interface{}, methodRules
 	allowedMethods := allowedModelMethods(methodRules)
 	for _, route := range allowedMethods {
 		route.Path = strings.Replace(route.Path, "{{.ModelName}}", publicName, 1)
-		r.Routes = append(r.Routes, route)
+		r.appendRoute(route)
 	}
 }
 
-func (r *Router) Action(path string, action interface{}) {
-	r.appendRoute("POST", fmt.Sprintf("{{ .ActionPath }}/%v", path), action)
+func (r *Router) Action(path string, handler httpHandler) {
+	r.appendNewRoute("POST", fmt.Sprintf("{{ .ActionPath }}/%v", path), handler)
 }
 
-func (r *Router) Get(path string, action interface{}) {
-	r.appendRoute("GET", path, action)
+func (r *Router) Get(path string, handler httpHandler) {
+	r.appendNewRoute("GET", path, handler)
 }
 
-func (r *Router) Head(path string, action interface{}) {
-	r.appendRoute("HEAD", path, action)
+func (r *Router) Head(path string, handler httpHandler) {
+	r.appendNewRoute("HEAD", path, handler)
 }
 
-func (r *Router) Post(path string, action interface{}) {
-	r.appendRoute("POST", path, action)
+func (r *Router) Post(path string, handler httpHandler) {
+	r.appendNewRoute("POST", path, handler)
 }
 
-func (r *Router) Put(path string, action interface{}) {
-	r.appendRoute("PUT", path, action)
+func (r *Router) Put(path string, handler httpHandler) {
+	r.appendNewRoute("PUT", path, handler)
 }
 
-func (r *Router) Patch(path string, action interface{}) {
-	r.appendRoute("PATCH", path, action)
+func (r *Router) Patch(path string, handler httpHandler) {
+	r.appendNewRoute("PATCH", path, handler)
 }
 
-func (r *Router) Delete(path string, action interface{}) {
-	r.appendRoute("DELETE", path, action)
+func (r *Router) Delete(path string, handler httpHandler) {
+	r.appendNewRoute("DELETE", path, handler)
 }
 
-func (r *Router) Options(path string, action interface{}) {
-	r.appendRoute("OPTIONS", path, action)
+func (r *Router) Options(path string, handler httpHandler) {
+	r.appendNewRoute("OPTIONS", path, handler)
 }
 
-func (r *Router) Trace(path string, action interface{}) {
-	r.appendRoute("TRACE", path, action)
+func (r *Router) Trace(path string, handler httpHandler) {
+	r.appendNewRoute("TRACE", path, handler)
 }
 
-func (r *Router) appendRoute(method string, path string, action interface{}) {
-	if err := validateHandler(action); err != nil {
-		panic(err.Error())
+func (r *Router) appendNewRoute(method string, path string, handler httpHandler) {
+	if r.Routes == nil {
+		r.Routes = make(map[string]map[string]httpHandler)
 	}
-	r.Routes = append(r.Routes, Route{method, path, action})
+	if r.Routes[path] == nil {
+		r.Routes[path] = make(map[string]httpHandler)
+	}
+	r.Routes[path][method] = handler
 }
 
-func validateHandler(handler interface{}) (e error) {
-	if reflect.TypeOf(handler).Kind() != reflect.Func {
-		e = &InvalidHandlerError{handler}
-	}
-	return
+func (r *Router) appendRoute(route Route) {
+	r.appendNewRoute(route.Method, route.Path, route.Handler)
 }
 
 func allowedModelMethods(rules MethodRules) (allowedMethods map[string]Route) {
@@ -136,12 +140,4 @@ func allowedModelMethods(rules MethodRules) (allowedMethods map[string]Route) {
 	}
 
 	return
-}
-
-type InvalidHandlerError struct {
-	handler interface{}
-}
-
-func (e *InvalidHandlerError) Error() string {
-	return fmt.Sprintf(`"A handler must be a callable function. Got: '%s'"`, e.handler)
 }
