@@ -3,8 +3,8 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"regexp"
+	"strings"
 )
 
 type Router struct {
@@ -39,15 +39,15 @@ var tmpFunc httpHandler = func(rw http.ResponseWriter, r *http.Request) {
 }
 
 var allModelMethods = map[string]Route{
-	"Create":    Route{"POST", "/{{.api_prefix}}/{{.model_name}}", tmpFunc},
-	"Find":      Route{"GET", "/{{.api_prefix}}/{{.model_name}}/:id", tmpFunc},
-	"FindAll":   Route{"GET", "/{{.api_prefix}}/{{.model_name}}", tmpFunc},
-	"Update":    Route{"PATCH", "/{{.api_prefix}}/{{.model_name}}/:id", tmpFunc},
-	"UpdateAll": Route{"PATCH", "/{{.api_prefix}}/{{.model_name}}", tmpFunc},
-	"Replace":   Route{"PUT", "/{{.api_prefix}}/{{.model_name}}/:id", tmpFunc},
+	"Create":     Route{"POST", "/{{.api_prefix}}/{{.model_name}}", tmpFunc},
+	"Find":       Route{"GET", "/{{.api_prefix}}/{{.model_name}}/:id", tmpFunc},
+	"FindAll":    Route{"GET", "/{{.api_prefix}}/{{.model_name}}", tmpFunc},
+	"Update":     Route{"PATCH", "/{{.api_prefix}}/{{.model_name}}/:id", tmpFunc},
+	"UpdateAll":  Route{"PATCH", "/{{.api_prefix}}/{{.model_name}}", tmpFunc},
+	"Replace":    Route{"PUT", "/{{.api_prefix}}/{{.model_name}}/:id", tmpFunc},
 	"Destroy":    Route{"DELETE", "/{{.api_prefix}}/{{.model_name}}/:id", tmpFunc},
 	"DestroyAll": Route{"DELETE", "//{{.api_prefix}}/{{.model_name}}", tmpFunc},
-	"Info":   Route{"OPTIONS", "/{{.api_prefix}}/{{.model_name}}", tmpFunc},
+	"Info":       Route{"OPTIONS", "/{{.api_prefix}}/{{.model_name}}", tmpFunc},
 }
 
 func (r *Router) Model(publicName string, modelInstance interface{}, methodRules MethodRules) {

@@ -13,4 +13,3 @@ func TestExtractPathFromTemplate(t *testing.T) {
 	path := extractPathFromTemplate(pathTemplate, config)
 	assertEqual(t, path, "/api/user/")
 }
-
