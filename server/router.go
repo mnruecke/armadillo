@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"regexp"
 )
 
 type Router struct {
@@ -38,27 +39,62 @@ var tmpFunc httpHandler = func(rw http.ResponseWriter, r *http.Request) {
 }
 
 var allModelMethods = map[string]Route{
-	"Create":    Route{"POST", "/{{.ModelName}}", tmpFunc},
-	"Find":      Route{"GET", "/{{.ModelName}}/:id", tmpFunc},
-	"FindAll":   Route{"GET", "/{{.ModelName}}", tmpFunc},
-	"Update":    Route{"PATCH", "/{{.ModelName}}/:id", tmpFunc},
-	"UpdateAll": Route{"PATCH", "/{{.ModelName}}", tmpFunc},
-	"Replace":   Route{"PUT", "/{{.ModelName}}/:id", tmpFunc},
-	"Delete":    Route{"DELETE", "/{{.ModelName}}/:id", tmpFunc},
-	"DeleteAll": Route{"DELETE", "/{{.ModelName}}", tmpFunc},
-	"Options":   Route{"OPTIONS", "/{{.ModelName}}", tmpFunc},
+	"Create":    Route{"POST", "/{{.api_prefix}}/{{.model_name}}", tmpFunc},
+	"Find":      Route{"GET", "/{{.api_prefix}}/{{.model_name}}/:id", tmpFunc},
+	"FindAll":   Route{"GET", "/{{.api_prefix}}/{{.model_name}}", tmpFunc},
+	"Update":    Route{"PATCH", "/{{.api_prefix}}/{{.model_name}}/:id", tmpFunc},
+	"UpdateAll": Route{"PATCH", "/{{.api_prefix}}/{{.model_name}}", tmpFunc},
+	"Replace":   Route{"PUT", "/{{.api_prefix}}/{{.model_name}}/:id", tmpFunc},
+	"Destroy":    Route{"DELETE", "/{{.api_prefix}}/{{.model_name}}/:id", tmpFunc},
+	"DestroyAll": Route{"DELETE", "//{{.api_prefix}}/{{.model_name}}", tmpFunc},
+	"Info":   Route{"OPTIONS", "/{{.api_prefix}}/{{.model_name}}", tmpFunc},
 }
 
 func (r *Router) Model(publicName string, modelInstance interface{}, methodRules MethodRules) {
 	allowedMethods := allowedModelMethods(methodRules)
 	for _, route := range allowedMethods {
-		route.Path = strings.Replace(route.Path, "{{.ModelName}}", publicName, 1)
-		r.appendRoute(route)
+		r.appendModelRoute(route, publicName)
 	}
 }
 
+func (r *Router) Create(publicName string, modelInstance interface{}) {
+	r.appendModelRoute(allModelMethods["Create"], publicName)
+}
+
+func (r *Router) Find(publicName string, modelInstance interface{}) {
+	r.appendModelRoute(allModelMethods["Find"], publicName)
+}
+
+func (r *Router) FindAll(publicName string, modelInstance interface{}) {
+	r.appendModelRoute(allModelMethods["FindAll"], publicName)
+}
+
+func (r *Router) Update(publicName string, modelInstance interface{}) {
+	r.appendModelRoute(allModelMethods["Update"], publicName)
+}
+
+func (r *Router) UpdateAll(publicName string, modelInstance interface{}) {
+	r.appendModelRoute(allModelMethods["UpdateAll"], publicName)
+}
+
+func (r *Router) Replace(publicName string, modelInstance interface{}) {
+	r.appendModelRoute(allModelMethods["Replace"], publicName)
+}
+
+func (r *Router) Destroy(publicName string, modelInstance interface{}) {
+	r.appendModelRoute(allModelMethods["Destroy"], publicName)
+}
+
+func (r *Router) DestroyAll(publicName string, modelInstance interface{}) {
+	r.appendModelRoute(allModelMethods["DestroyAll"], publicName)
+}
+
+func (r *Router) Info(publicName string, modelInstance interface{}) {
+	r.appendModelRoute(allModelMethods["Info"], publicName)
+}
+
 func (r *Router) Action(path string, handler httpHandler) {
-	r.appendNewRoute("POST", fmt.Sprintf("{{ .ActionPath }}/%v", path), handler)
+	r.appendNewRoute("POST", fmt.Sprintf("/{{.api_prefix}}/{{ .action_prefix }}/%v", path), handler)
 }
 
 func (r *Router) Get(path string, handler httpHandler) {
@@ -94,6 +130,7 @@ func (r *Router) Trace(path string, handler httpHandler) {
 }
 
 func (r *Router) appendNewRoute(method string, path string, handler httpHandler) {
+	path = safeFormatPath(path)
 	if r.Routes == nil {
 		r.Routes = make(map[string]map[string]httpHandler)
 	}
@@ -105,6 +142,11 @@ func (r *Router) appendNewRoute(method string, path string, handler httpHandler)
 
 func (r *Router) appendRoute(route Route) {
 	r.appendNewRoute(route.Method, route.Path, route.Handler)
+}
+
+func (r *Router) appendModelRoute(route Route, publicName string) {
+	route.Path = strings.Replace(route.Path, "{{.model_name}}", publicName, 1)
+	r.appendRoute(route)
 }
 
 func allowedModelMethods(rules MethodRules) (allowedMethods map[string]Route) {
@@ -140,4 +182,15 @@ func allowedModelMethods(rules MethodRules) (allowedMethods map[string]Route) {
 	}
 
 	return
+}
+
+func safeFormatPath(path string) string {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	if !strings.HasSuffix(path, "/") {
+		path = path + "/"
+	}
+	r := regexp.MustCompile("/{2,}")
+	return r.ReplaceAllString(path, "/")
 }

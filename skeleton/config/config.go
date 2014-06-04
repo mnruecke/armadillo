@@ -5,11 +5,15 @@ import "github.com/repp/armadillo/server"
 var development = server.Config{
 	"port":               3000,
 	"serve_static_files": true,
+	"api_prefix":         "/api",
+	"action_prefix":      "/actions",
 }
 
 var production = server.Config{
 	"port":               3000,
 	"serve_static_files": false,
+	"api_prefix":         "/api",
+	"action_prefix":      "/actions",
 }
 
 func Load() (config server.Config) {
@@ -17,11 +21,6 @@ func Load() (config server.Config) {
 		config = production
 	} else {
 		config = development
-	}
-
-	// If a router isn't specified in the chosen config, use the default created by Routes()
-	if _, routerPresent := config["router"]; !routerPresent {
-		config["router"] = Routes()
 	}
 	return
 }

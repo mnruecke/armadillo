@@ -1,26 +1,19 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
-	"io"
 	"net/http"
+	"text/template"
 )
 
 type Config map[string]interface{}
 
-func Run(config Config) {
+func Run(config Config, router Router) {
 	if ssf, ssfPresent := config["serve_static_files"]; ssfPresent {
 		serveStaticFiles(ssf)
 	}
-
-	if r, routerPresent := config["router"]; routerPresent {
-		if router, isRouterType := r.(Router); isRouterType {
-			buildRoutes(router, config)
-		} else {
-			// TODO: Log bad router variable
-		}
-	}
-
+	buildRoutes(router, config)
 	http.ListenAndServe(fmt.Sprintf(":%v", config["port"]), nil)
 }
 
@@ -43,13 +36,10 @@ func serveStaticFiles(staticFiles interface{}) {
 	}
 }
 
-func HelloServer(w http.ResponseWriter, req *http.Request) {
-	io.WriteString(w, "hello, world!\n")
-}
-
 func buildRoutes(router Router, config Config) {
 
-	for path, methodToHandler := range router.Routes {
+	for pathTemplate, methodToHandler := range router.Routes {
+		path := extractPathFromTemplate(pathTemplate, config)
 		http.HandleFunc(path, func(rw http.ResponseWriter, request *http.Request) {
 			handler, methodDefinedOnPath := methodToHandler[request.Method]
 			if methodDefinedOnPath {
@@ -60,4 +50,14 @@ func buildRoutes(router Router, config Config) {
 		})
 	}
 
+}
+
+func extractPathFromTemplate(path string, config Config) string {
+	var b bytes.Buffer
+	t := template.Must(template.New("path").Parse(path))
+	err := t.Execute(&b, config)
+	if err != nil {
+		panic(err)
+	}
+	return safeFormatPath(b.String())
 }

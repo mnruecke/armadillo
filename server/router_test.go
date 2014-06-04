@@ -2,6 +2,7 @@ package server
 
 import (
 	"testing"
+	"fmt"
 )
 
 func TestAppendRoute(t *testing.T) {
@@ -50,6 +51,15 @@ func TestModel(t *testing.T) {
 	router.Model("cat", Cat{1}, MethodRules{Allow: NewSet("Create")})
 
 	assertEqual(t, len(router.Routes), 1)
-	_, present := router.Routes["/cat"]["POST"]
+	_, present := router.Routes["/{{.api_prefix}}/cat"]["POST"]
 	assertTrue(t, present)
+}
+
+func TestSafeFormatPath(t *testing.T) {
+	assertEqual(t, safeFormatPath("dogs"), "/dogs/")
+	assertEqual(t, safeFormatPath("//dogs"), "/dogs/")
+	assertEqual(t, safeFormatPath("//dogs//"), "/dogs/")
+	assertEqual(t, safeFormatPath("dog//more/cat"), "/dog/more/cat/")
+	assertEqual(t, safeFormatPath("//////dog///more/cat"), "/dog/more/cat/")
+	assertEqual(t, safeFormatPath("//////dog///more//cat////"), "/dog/more/cat/")
 }
