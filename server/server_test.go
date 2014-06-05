@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/repp/armadillo/test"
 	"testing"
 )
 
@@ -11,5 +12,5 @@ func TestExtractPathFromTemplate(t *testing.T) {
 		"model_name": "user",
 	}
 	path := extractPathFromTemplate(pathTemplate, config)
-	assertEqual(t, path, "/api/user/")
+	test.AssertEqual(t, path, "/api/user/")
 }

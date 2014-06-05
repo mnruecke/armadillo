@@ -8,7 +8,7 @@ import (
 )
 
 type Router struct {
-	Routes map[string]map[string]httpHandler
+	Routes map[string]map[string]httpHandler // Path, Method, Handler
 }
 
 type Route struct {
