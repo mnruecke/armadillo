@@ -3,11 +3,12 @@ package server
 import (
 	"github.com/repp/armadillo/test"
 	"testing"
+	"github.com/repp/armadillo/model"
 )
 
 func TestAppendRoute(t *testing.T) {
 	var router Router
-	router.appendNewRoute("POST", "/dogs/", tmpFunc)
+	router.appendRoute("POST", "/dogs/", tmpFunc)
 
 	_, present := router.Routes["/dogs/"]["POST"]
 	test.AssertTrue(t, present)
@@ -47,8 +48,8 @@ func TestAllowedModelMethods(t *testing.T) {
 
 func TestModel(t *testing.T) {
 	var router Router
-	type Cat struct{ legs int }
-	router.Model("cat", Cat{1}, MethodRules{Allow: NewSet("Create")})
+	mock := model.Model(&test.MockModel{7, "Test"})
+	router.Model("cat", mock, MethodRules{Allow: NewSet("Create")})
 
 	test.AssertEqual(t, len(router.Routes), 1)
 	_, present := router.Routes["/{{.api_prefix}}/cat/"]["POST"]

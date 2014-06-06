@@ -41,6 +41,7 @@ func buildRoutes(router Router, config Config) {
 	for pathTemplate, methodToHandler := range router.Routes {
 		path := extractPathFromTemplate(pathTemplate, config)
 		http.HandleFunc(path, func(rw http.ResponseWriter, request *http.Request) {
+			// Check if the current method(GET, POST, etc) has been defined for this path("/api/v1/users")
 			handler, methodDefinedOnPath := methodToHandler[request.Method]
 			if methodDefinedOnPath {
 				handler(rw, request)

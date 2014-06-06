@@ -18,9 +18,9 @@ func (cm *CommonMongoModel) Initialize(currentTime time.Time) {
 }
 
 // Getters and Setters
-func (cm *CommonMongoModel) GetId() interface{}   { return cm.Id }
+func (cm *CommonMongoModel) GetId() interface{}     { return cm.Id }
 func (cm *CommonMongoModel) GetCreated() time.Time  { return cm.Created.format().Time }
 func (cm *CommonMongoModel) GetUpdated() time.Time  { return cm.Updated.format().Time }
-func (cm *CommonMongoModel) SetId(id interface{}) { cm.Id = id.(bson.ObjectId) }
+func (cm *CommonMongoModel) SetId(id interface{})   { cm.Id = id.(bson.ObjectId) }
 func (cm *CommonMongoModel) SetCreated(t time.Time) { cm.Created = modelTime{t}.format() }
 func (cm *CommonMongoModel) SetUpdated(t time.Time) { cm.Updated = modelTime{t}.format() }
