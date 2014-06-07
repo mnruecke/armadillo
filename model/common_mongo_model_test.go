@@ -5,16 +5,16 @@ import (
 	"testing"
 )
 
-type MockModel struct {
+type MockCommonModel struct {
 	CommonMongoModel
 	Name string
 }
 
-func (m *MockModel) Validate() []error {
+func (m *MockCommonModel) Validate() []error {
 	return []error{}
 }
 
 func TestMongoModelImplementsModel(t *testing.T) {
-	model := Model(&MockModel{})
+	model := Model(&MockCommonModel{})
 	test.AssertNotEqual(t, model, nil)
 }

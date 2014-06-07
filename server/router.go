@@ -43,11 +43,6 @@ type MethodRules struct {
 	Forbid Set
 }
 
-var tmpFunc httpHandler = func(rw http.ResponseWriter, r *http.Request) {
-	rw.Write([]byte("Hello World!"))
-	rw.WriteHeader(200)
-}
-
 var allModelMethods = map[string]ModelRoute{
 	"Create":     ModelRoute{Method: "POST", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: api.GenerateCreate},
 	"Find":       ModelRoute{Method: "GET", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: api.GenerateFind},
@@ -193,10 +188,14 @@ func allowedModelMethods(rules MethodRules) (allowedMethods map[string]ModelRout
 }
 
 func convertToRoute(mr ModelRoute) Route {
+	var handler httpHandler
+	if mr.ModelInstance != nil {
+		handler = mr.HandlerGenerator(mr.ModelInstance)
+	}
 	return Route{
 		mr.Method,
 		strings.Replace(mr.Path, "{{.model_name}}", mr.ModelName, 1),
-		mr.HandlerGenerator(mr.ModelInstance),
+		handler,
 	}
 }
 

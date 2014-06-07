@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+// TODO: write integration tests for Run(), serveStaticFiles() and buildRoutes()
+
 func TestExtractPathFromTemplate(t *testing.T) {
 	pathTemplate := "/{{.api_prefix}}/{{.model_name}}"
 	config := Config{
