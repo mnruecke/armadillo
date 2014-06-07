@@ -49,15 +49,15 @@ var tmpFunc httpHandler = func(rw http.ResponseWriter, r *http.Request) {
 }
 
 var allModelMethods = map[string]ModelRoute{
-	"Create":     ModelRoute{Method: "POST", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: api.CreateMethodFor},
-	"Find":       ModelRoute{Method: "GET", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: api.CreateMethodFor},
-	"FindAll":    ModelRoute{Method: "GET", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: api.CreateMethodFor},
-	"Update":     ModelRoute{Method: "PATCH", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: api.CreateMethodFor},
-	"UpdateAll":  ModelRoute{Method: "PATCH", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: api.CreateMethodFor},
-	"Replace":    ModelRoute{Method: "PUT", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: api.CreateMethodFor},
-	"Destroy":    ModelRoute{Method: "DELETE", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: api.CreateMethodFor},
-	"DestroyAll": ModelRoute{Method: "DELETE", Path: "//{{.api_prefix}}/{{.model_name}}", HandlerGenerator: api.CreateMethodFor},
-	"Info":       ModelRoute{Method: "OPTIONS", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: api.CreateMethodFor},
+	"Create":     ModelRoute{Method: "POST", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: api.GenerateCreate},
+	"Find":       ModelRoute{Method: "GET", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: api.GenerateFind},
+	"FindAll":    ModelRoute{Method: "GET", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: api.GenerateFindAll},
+	"Update":     ModelRoute{Method: "PATCH", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: api.GenerateUpdate},
+	"UpdateAll":  ModelRoute{Method: "PATCH", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: api.GenerateUpdateAll},
+	"Replace":    ModelRoute{Method: "PUT", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: api.GenerateReplace},
+	"Destroy":    ModelRoute{Method: "DELETE", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: api.GenerateDestroy},
+	"DestroyAll": ModelRoute{Method: "DELETE", Path: "//{{.api_prefix}}/{{.model_name}}", HandlerGenerator: api.GenerateDestroyAll},
+	"Info":       ModelRoute{Method: "OPTIONS", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: api.GenerateInfo},
 }
 
 func (r *Router) Model(publicName string, modelInstance model.Model, methodRules MethodRules) {
