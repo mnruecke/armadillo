@@ -5,10 +5,9 @@ import (
 	"testing"
 )
 
-func AssertTypeMatch(t *testing.T, a interface{}, expectedType interface{}) {
-	expected := reflect.TypeOf(expectedType).Elem()
-	if reflect.TypeOf(a) != expected {
-		t.Errorf("%v was expected to be of type: %v - Got: %v", a, expected, reflect.TypeOf(a))
+func AssertTypeMatch(t *testing.T, a interface{}, b interface{}) {
+	if reflect.TypeOf(a) != reflect.TypeOf(b) {
+		t.Errorf("%v was expected to be of type: %v - Got: %v", a, b, reflect.TypeOf(a))
 	}
 }
 
