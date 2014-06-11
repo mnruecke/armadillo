@@ -91,7 +91,39 @@ func TestSave(t *testing.T) {
 func TestFindBy(t *testing.T) {
 	resetDb()
 
-	
+	// Setup
+	mock1 := &MockMongoModel{Name: "Trevor"}
+	mock2 := &MockMongoModel{Name: "Emma"}
+	mock1.Initialize()
+	mock2.Initialize()
+
+	insertTestFixture(mock1)
+	insertTestFixture(mock2)
+
+	// Find Emma
+	emma := &MockMongoModel{}
+	err := TestGateway.FindBy(emma, Query{Conditions: map[string]interface{}{"name": "Emma"}})
+	test.AssertEqual(t, err, nil)
+	test.AssertEqual(t, emma.GetId(), mock2.GetId())
+	test.AssertEqual(t, emma.Name, "Emma")
+
+	// Find the second mock not named "Joyce" order by name, in this case "Trevor"
+	trevor := &MockMongoModel{}
+	offset := 1
+	qry := Query{
+		Conditions: map[string]interface{}{"name": map[string]string{"$ne": "Joyce"}},
+		Order: []string{"name"},
+		Offset: &offset,
+	}
+	err = TestGateway.FindBy(trevor, qry)
+	test.AssertEqual(t, err, nil)
+	test.AssertEqual(t, trevor.GetId(), mock1.GetId())
+	test.AssertEqual(t, trevor.Name, "Trevor")
+
+}
+
+func insertTestFixture(m Model) {
+	TestGateway.NewSession().DB("").C(collectionName(m)).Insert(m)
 }
 
 // Resets the database so each test can be run in isolation

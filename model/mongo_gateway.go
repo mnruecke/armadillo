@@ -39,6 +39,16 @@ func (g *MongoGateway) Save(m Model) error {
 }
 
 func (g *MongoGateway) FindBy(m Model, q Query) error {
+	s := g.NewSession()
+	defer s.Close()
+	query := s.DB("").C(collectionName(m)).Find(q.Conditions)
+	if q.Offset != nil {
+		query = query.Skip(*q.Offset)
+	}
+	if q.Order != nil {
+		query = query.Sort(q.Order...)
+	}
+	query.One(m)
 	return nil
 }
 

@@ -28,9 +28,9 @@ type DbGateway interface {
 
 type Query struct {
 	Conditions map[string]interface{}
-	Order      interface{}
-	Limit      int
-	Offset     int
+	Order      []string
+	Limit      *int
+	Offset     *int
 }
 
 //TODO: set these from config

@@ -7,8 +7,8 @@ import (
 
 type CommonMongoModel struct {
 	Id      bson.ObjectId `json:"id" bson:"_id,omitempty"`
-	Created modelTime     `json:"created"`
-	Updated modelTime     `json:"updated"`
+	Created modelTime     `json:"created" bson:"created,omitempty"`
+	Updated modelTime     `json:"updated" bson:"updated,omitempty"`
 }
 
 func (cm *CommonMongoModel) Initialize() {
