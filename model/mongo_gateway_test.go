@@ -119,7 +119,39 @@ func TestFindBy(t *testing.T) {
 	test.AssertEqual(t, err, nil)
 	test.AssertEqual(t, trevor.GetId(), mock1.GetId())
 	test.AssertEqual(t, trevor.Name, "Trevor")
+}
 
+func TestFindById(t *testing.T) {
+	resetDb()
+
+	mock := &MockMongoModel{Name: "Fuu"}
+	mock.Initialize()
+	insertTestFixture(mock)
+
+	newMock := &MockMongoModel{}
+	newMock.SetId(mock.GetId())
+	err := TestGateway.FindById(newMock)
+
+	test.AssertEqual(t, err, nil)
+	test.AssertEqual(t, newMock.GetCreated(), mock.GetCreated())
+	test.AssertEqual(t, newMock.Name, "Fuu")
+}
+
+func TestFindAll(t *testing.T) {
+	resetDb()
+
+	thing1 := &MockMongoModel{Name: "Thing 1"}
+	thing2 := &MockMongoModel{Name: "Thing 2"}
+	thing1.Initialize()
+	thing2.Initialize()
+	insertTestFixture(thing1)
+	insertTestFixture(thing2)
+
+	modelsInterface, err := TestGateway.FindAll(&MockMongoModel{})
+	models := *modelsInterface.(*[]*MockMongoModel)
+	test.AssertEqual(t, err, nil)
+	test.AssertEqual(t, len(models), 2)
+	test.AssertTypeMatch(t, models, []*MockMongoModel{thing1, thing2})
 }
 
 func insertTestFixture(m Model) {

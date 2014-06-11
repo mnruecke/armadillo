@@ -16,8 +16,8 @@ type DbGateway interface {
 	Save(Model) error          // update injected model
 	FindBy(Model, Query) error // update injected model
 	FindById(Model) error      // update injected model
-	FindAll(Model) ([]Model, error)
-	FindAllBy(Model, Query) ([]Model, error)
+	FindAll(Model) (interface{}, error)
+	FindAllBy(Model, Query) ([]interface{}, error)
 	Update(Model) error // update injected model
 	UpdateAll(Model) (int, error)
 	UpdateAllWith(Model, Query) (int, error)

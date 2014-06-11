@@ -48,20 +48,27 @@ func (g *MongoGateway) FindBy(m Model, q Query) error {
 	if q.Order != nil {
 		query = query.Sort(q.Order...)
 	}
+	// q.Limit is irrelevant as this method only returns one record
 	query.One(m)
 	return nil
 }
 
 func (g *MongoGateway) FindById(m Model) error {
-	return nil
+	s := g.NewSession()
+	defer s.Close()
+	return s.DB("").C(collectionName(m)).FindId(m.GetId()).One(m)
 }
 
-func (g *MongoGateway) FindAll(m Model) ([]Model, error) {
-	return []Model{}, nil
+func (g *MongoGateway) FindAll(m Model) (interface{}, error) {
+	s := g.NewSession()
+	defer s.Close()
+	var results = reflect.New(reflect.SliceOf(reflect.TypeOf(m))).Interface()
+	err := s.DB("").C(collectionName(m)).Find(nil).All(results)
+	return results, err
 }
 
-func (g *MongoGateway) FindAllBy(m Model, q Query) ([]Model, error) {
-	return []Model{}, nil
+func (g *MongoGateway) FindAllBy(m Model, q Query) ([]interface{}, error) {
+	return []interface{}{}, nil
 }
 
 func (g *MongoGateway) Update(m Model) error {
