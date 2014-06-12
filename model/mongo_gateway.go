@@ -94,19 +94,29 @@ func (g *MongoGateway) UpdateAllWhere(m Model, updates map[string]interface{}, c
 }
 
 func (g *MongoGateway) DeleteWhere(m Model, conditions map[string]interface{}) error {
-	return nil
+	s := g.NewSession()
+	defer s.Close()
+	return collection(s,m).Remove(conditions)
 }
 
 func (g *MongoGateway) DeleteById(m Model) error {
-	return nil
+	s := g.NewSession()
+	defer s.Close()
+	return collection(s,m).RemoveId(m.GetId())
 }
 
 func (g *MongoGateway) DeleteAll(m Model) (int, error) {
-	return 0, nil
+	return g.DeleteAllWhere(m, nil)
 }
 
 func (g *MongoGateway) DeleteAllWhere(m Model, conditions map[string]interface{}) (int, error) {
-	return 0, nil
+	s := g.NewSession()
+	defer s.Close()
+	changeInfo, err := collection(s,m).RemoveAll(conditions)
+	if err != nil {
+		return 0, err
+	}
+	return changeInfo.Removed, nil
 }
 
 // Private methods
