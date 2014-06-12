@@ -17,10 +17,10 @@ type DbGateway interface {
 	FindBy(Model, Query) error // update injected model
 	FindById(Model) error      // update injected model
 	FindAll(Model) (interface{}, error)
-	FindAllBy(Model, Query) ([]interface{}, error)
-	Update(Model) error // update injected model
-	UpdateAll(Model) (int, error)
-	UpdateAllWith(Model, Query) (int, error)
+	FindAllBy(Model, Query) (interface{}, error)
+	Update(Model, map[string]interface{}) error // update injected model
+	UpdateAll(Model, map[string]interface{}) (int, error)
+	UpdateAllWhere(Model, map[string]interface{}, map[string]interface{}) (int, error)
 	DeleteBy(Model, Query) (int, error)
 	DeleteById(Model) error
 	DeleteAll(Model) (int, error)

@@ -1,7 +1,7 @@
 package test
 
 type MockModel struct {
-	Id int
+	Id   int
 	Name string
 }
 

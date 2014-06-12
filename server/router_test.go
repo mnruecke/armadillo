@@ -1,11 +1,11 @@
 package server
 
 import (
-	"github.com/repp/armadillo/test"
-	"testing"
-	"github.com/repp/armadillo/model"
 	"github.com/repp/armadillo/api"
+	"github.com/repp/armadillo/model"
+	"github.com/repp/armadillo/test"
 	"net/http"
+	"testing"
 )
 
 var mockHandler httpHandler = func(rw http.ResponseWriter, r *http.Request) {
@@ -49,7 +49,7 @@ func TestGet(t *testing.T) {
 func TestAppendModelRoute(t *testing.T) {
 	var router Router
 	modelRoute := ModelRoute{Method: "GET", Path: "/api/{{.model_name}}/", HandlerGenerator: api.GenerateFindAll}
-	router.appendModelRoute(modelRoute, "mocks",  &test.MockModel{})
+	router.appendModelRoute(modelRoute, "mocks", &test.MockModel{})
 
 	_, present := router.Routes["/api/mocks/"]["GET"]
 	test.AssertTrue(t, present)
@@ -91,7 +91,7 @@ func TestConvertToRoute(t *testing.T) {
 	test.AssertDeepEqual(t, blankRoute, Route{})
 
 	noHandlerGeneratorRoute := ModelRoute{}
-	noHandlerGeneratorRoute.ModelInstance  = &test.MockModel{}
+	noHandlerGeneratorRoute.ModelInstance = &test.MockModel{}
 	noHandlerRoute := convertToRoute(blankModelRoute)
 	test.AssertDeepEqual(t, noHandlerRoute, Route{})
 

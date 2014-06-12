@@ -3,13 +3,13 @@ package model
 import (
 	"github.com/repp/armadillo/test"
 	"labix.org/v2/mgo/bson"
-	"time"
 	"testing"
+	"time"
 )
 
 type MockMongoModel struct {
 	CommonMongoModel `bson:",inline"`
-	Name string
+	Name             string
 }
 
 func (m *MockMongoModel) Validate() []error {

@@ -2,15 +2,15 @@ package model
 
 import (
 	"github.com/repp/armadillo/test"
-	"testing"
 	"labix.org/v2/mgo"
+	"testing"
 	"time"
 )
 
 var TestDialInfo *mgo.DialInfo = &mgo.DialInfo{
-	Addrs: []string{"localhost"},
-	Direct: true,
-	Timeout: 10*time.Second,
+	Addrs:    []string{"localhost"},
+	Direct:   true,
+	Timeout:  10 * time.Second,
 	Database: "armadillo_test",
 }
 var TestGateway *MongoGateway = &MongoGateway{DialInfo: TestDialInfo}
@@ -112,8 +112,8 @@ func TestFindBy(t *testing.T) {
 	offset := 1
 	qry := Query{
 		Conditions: map[string]interface{}{"name": map[string]string{"$ne": "Joyce"}},
-		Order: []string{"name"},
-		Offset: &offset,
+		Order:      []string{"name"},
+		Offset:     &offset,
 	}
 	err = TestGateway.FindBy(trevor, qry)
 	test.AssertEqual(t, err, nil)
@@ -154,6 +154,99 @@ func TestFindAll(t *testing.T) {
 	test.AssertTypeMatch(t, models, []*MockMongoModel{thing1, thing2})
 }
 
+func TestFindAllBy(t *testing.T) {
+	resetDb()
+
+	thing1 := &MockMongoModel{Name: "Thing"}
+	thing2 := &MockMongoModel{Name: "Thing"}
+	thing3 := &MockMongoModel{Name: "Bob"}
+	thing1.Initialize()
+	thing2.Initialize()
+	thing3.Initialize()
+	insertTestFixture(thing1)
+	insertTestFixture(thing2)
+	insertTestFixture(thing3)
+
+	modelsInterface, err := TestGateway.FindAllBy(&MockMongoModel{}, Query{Conditions: map[string]interface{}{"name": "Thing"}})
+	models := *modelsInterface.(*[]*MockMongoModel)
+	test.AssertEqual(t, err, nil)
+	test.AssertEqual(t, len(models), 2)
+	test.AssertTypeMatch(t, models, []*MockMongoModel{thing1, thing2})
+	// Todo: extend this test to hit order, offset and limit
+}
+
+func TestUpdate(t *testing.T) {
+	resetDb()
+
+	mock := &MockMongoModel{Name: "Robert Zimmerman"}
+	mock.Initialize()
+	insertTestFixture(mock)
+
+	err := TestGateway.Update(mock, map[string]interface{}{"name": "Bob Dylan"})
+	test.AssertEqual(t, err, nil)
+	test.AssertEqual(t, mock.Name, "Bob Dylan")
+
+	foundModel := findMockModel(mock.GetId())
+	test.AssertEqual(t, foundModel.Name, "Bob Dylan")
+}
+
+func TestUpdateAll(t *testing.T) {
+	resetDb()
+
+	mock1 := &MockMongoModel{Name: "Neo"}
+	mock2 := &MockMongoModel{Name: "Morpheus"}
+	mock3 := &MockMongoModel{Name: "Trinity"}
+	mock1.Initialize()
+	mock2.Initialize()
+	mock3.Initialize()
+	insertTestFixture(mock1)
+	insertTestFixture(mock2)
+	insertTestFixture(mock3)
+
+	updateCount, err := TestGateway.UpdateAll(&MockMongoModel{}, map[string]interface{}{"$set": map[string]string{"name":"Agent Smith"}})
+	test.AssertEqual(t, err, nil)
+	test.AssertEqual(t, updateCount, 3)
+
+	foundModel := findMockModel(mock1.GetId())
+	test.AssertEqual(t, foundModel.Name, "Agent Smith")
+}
+
+func TestUpdateAllWhere(t *testing.T) {
+	resetDb()
+
+	mock1 := &MockMongoModel{Name: "Neo"}
+	mock2 := &MockMongoModel{Name: "Morpheus"}
+	mock3 := &MockMongoModel{Name: "Trinity"}
+	mock1.Initialize()
+	mock2.Initialize()
+	mock3.Initialize()
+	insertTestFixture(mock1)
+	insertTestFixture(mock2)
+	insertTestFixture(mock3)
+
+	updates := map[string]interface{}{"$set": map[string]string{"name":"Agent Smith"}}
+	conditions := map[string]interface{}{"name": "Morpheus"}
+	updateCount, err := TestGateway.UpdateAllWhere(&MockMongoModel{}, updates, conditions)
+	test.AssertEqual(t, err, nil)
+	test.AssertEqual(t, updateCount, 1)
+
+	foundModel1 := findMockModel(mock1.GetId())
+	foundModel2 := findMockModel(mock2.GetId())
+	test.AssertEqual(t, foundModel1.Name, "Neo")
+	test.AssertEqual(t, foundModel2.Name, "Agent Smith")
+}
+
+// Helpers
+
+func findMockModel(id interface{}) MockMongoModel {
+	var foundMock MockMongoModel
+	err := TestGateway.NewSession().DB("").C(collectionName( &MockMongoModel{} )).FindId(id).One(&foundMock)
+	if err != nil {
+		panic(err)
+	}
+	return foundMock
+}
+
 func insertTestFixture(m Model) {
 	TestGateway.NewSession().DB("").C(collectionName(m)).Insert(m)
 }
@@ -161,5 +254,7 @@ func insertTestFixture(m Model) {
 // Resets the database so each test can be run in isolation
 func resetDb() {
 	err := TestGateway.NewSession().DB("").DropDatabase()
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 }
