@@ -21,9 +21,10 @@ type DbGateway interface {
 	Update(Model, map[string]interface{}) error // update injected model
 	UpdateAll(Model, map[string]interface{}) (int, error)
 	UpdateAllWhere(Model, map[string]interface{}, map[string]interface{}) (int, error)
-	DeleteBy(Model, Query) (int, error)
+	DeleteWhere(Model, map[string]interface{}) error
 	DeleteById(Model) error
 	DeleteAll(Model) (int, error)
+	DeleteAllWhere(Model, map[string]interface{}) (int, error)
 }
 
 type Query struct {

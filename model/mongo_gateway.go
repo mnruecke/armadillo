@@ -93,8 +93,8 @@ func (g *MongoGateway) UpdateAllWhere(m Model, updates map[string]interface{}, c
 	return changeInfo.Updated, nil
 }
 
-func (g *MongoGateway) DeleteBy(m Model, q Query) (int, error) {
-	return 0, nil
+func (g *MongoGateway) DeleteWhere(m Model, conditions map[string]interface{}) error {
+	return nil
 }
 
 func (g *MongoGateway) DeleteById(m Model) error {
@@ -102,6 +102,10 @@ func (g *MongoGateway) DeleteById(m Model) error {
 }
 
 func (g *MongoGateway) DeleteAll(m Model) (int, error) {
+	return 0, nil
+}
+
+func (g *MongoGateway) DeleteAllWhere(m Model, conditions map[string]interface{}) (int, error) {
 	return 0, nil
 }
 
