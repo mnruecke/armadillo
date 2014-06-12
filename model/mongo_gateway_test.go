@@ -236,6 +236,29 @@ func TestUpdateAllWhere(t *testing.T) {
 	test.AssertEqual(t, foundModel2.Name, "Agent Smith")
 }
 
+func TestDeleteWhere(t *testing.T) {
+	resetDb()
+
+	mock1 := &MockMongoModel{Name: "Lemming"}
+	mock2 := &MockMongoModel{Name: "Dodo"}
+	mock3 := &MockMongoModel{Name: "House Cat"}
+	mock1.Initialize()
+	mock2.Initialize()
+	mock3.Initialize()
+	insertTestFixture(mock1)
+	insertTestFixture(mock2)
+	insertTestFixture(mock3)
+
+	err := TestGateway.DeleteWhere(&MockMongoModel{}, map[string]interface{}{"name": "Dodo"})
+	dodo := findMockModel(mock2.GetId())
+	lemming := findMockModel(mock1.GetId())
+	test.AssertEqual(t, err, nil)
+	test.AssertEqual(t, dodo, nil)
+	test.AssertNotEqual(t, dodo, nil)
+
+
+}
+
 // Helpers
 
 func findMockModel(id interface{}) MockMongoModel {
