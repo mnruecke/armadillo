@@ -16,11 +16,9 @@ var production = server.Config{
 	"action_prefix":      "/actions",
 }
 
-func Load() (config server.Config) {
-	if false { // ENV var based
-		config = production
-	} else {
-		config = development
+func Load() server.Config {
+	if false { // Todo: Make ENV var based
+		return production
 	}
-	return
+	return development
 }

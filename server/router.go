@@ -58,44 +58,44 @@ var allModelMethods = map[string]ModelRoute{
 func (r *Router) Model(publicName string, modelInstance model.Model, methodRules MethodRules) {
 	allowedMethods := allowedModelMethods(methodRules)
 	for _, modelRoute := range allowedMethods {
-		r.appendModelRoute(modelRoute, publicName, modelInstance)
+		r.ModelRoute(modelRoute, publicName, modelInstance)
 	}
 }
 
 func (r *Router) Create(publicName string, modelInstance model.Model) {
-	r.appendModelRoute(allModelMethods["Create"], publicName, modelInstance)
+	r.ModelRoute(allModelMethods["Create"], publicName, modelInstance)
 }
 
 func (r *Router) Find(publicName string, modelInstance model.Model) {
-	r.appendModelRoute(allModelMethods["Find"], publicName, modelInstance)
+	r.ModelRoute(allModelMethods["Find"], publicName, modelInstance)
 }
 
 func (r *Router) FindAll(publicName string, modelInstance model.Model) {
-	r.appendModelRoute(allModelMethods["FindAll"], publicName, modelInstance)
+	r.ModelRoute(allModelMethods["FindAll"], publicName, modelInstance)
 }
 
 func (r *Router) Update(publicName string, modelInstance model.Model) {
-	r.appendModelRoute(allModelMethods["Update"], publicName, modelInstance)
+	r.ModelRoute(allModelMethods["Update"], publicName, modelInstance)
 }
 
 func (r *Router) UpdateAll(publicName string, modelInstance model.Model) {
-	r.appendModelRoute(allModelMethods["UpdateAll"], publicName, modelInstance)
+	r.ModelRoute(allModelMethods["UpdateAll"], publicName, modelInstance)
 }
 
 func (r *Router) Replace(publicName string, modelInstance model.Model) {
-	r.appendModelRoute(allModelMethods["Replace"], publicName, modelInstance)
+	r.ModelRoute(allModelMethods["Replace"], publicName, modelInstance)
 }
 
 func (r *Router) Destroy(publicName string, modelInstance model.Model) {
-	r.appendModelRoute(allModelMethods["Destroy"], publicName, modelInstance)
+	r.ModelRoute(allModelMethods["Destroy"], publicName, modelInstance)
 }
 
 func (r *Router) DestroyAll(publicName string, modelInstance model.Model) {
-	r.appendModelRoute(allModelMethods["DestroyAll"], publicName, modelInstance)
+	r.ModelRoute(allModelMethods["DestroyAll"], publicName, modelInstance)
 }
 
 func (r *Router) Info(publicName string, modelInstance model.Model) {
-	r.appendModelRoute(allModelMethods["Info"], publicName, modelInstance)
+	r.ModelRoute(allModelMethods["Info"], publicName, modelInstance)
 }
 
 func (r *Router) Action(path string, handler httpHandler) {
@@ -134,7 +134,7 @@ func (r *Router) Trace(path string, handler httpHandler) {
 	r.appendRoute("TRACE", path, handler)
 }
 
-func (r *Router) appendModelRoute(modelRoute ModelRoute, modelName string, modelInstance model.Model) {
+func (r *Router) ModelRoute(modelRoute ModelRoute, modelName string, modelInstance model.Model) {
 	modelRoute.ModelInstance = modelInstance
 	modelRoute.ModelName = modelName
 	route := convertToRoute(modelRoute)

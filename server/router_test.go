@@ -46,10 +46,10 @@ func TestGet(t *testing.T) {
 	test.AssertTrue(t, present2)
 }
 
-func TestAppendModelRoute(t *testing.T) {
+func TestModelRoute(t *testing.T) {
 	var router Router
 	modelRoute := ModelRoute{Method: "GET", Path: "/api/{{.model_name}}/", HandlerGenerator: api.GenerateFindAll}
-	router.appendModelRoute(modelRoute, "mocks", &test.MockModel{})
+	router.ModelRoute(modelRoute, "mocks", &test.MockModel{})
 
 	_, present := router.Routes["/api/mocks/"]["GET"]
 	test.AssertTrue(t, present)
