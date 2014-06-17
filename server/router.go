@@ -10,6 +10,7 @@ import (
 )
 
 type Router struct {
+	C api.ModelMethodConstructor
 	Routes map[string]map[string]httpHandler // Path, Method, Handler
 }
 
@@ -43,59 +44,47 @@ type MethodRules struct {
 	Forbid Set
 }
 
-var allModelMethods = map[string]ModelRoute{
-	"Create":     ModelRoute{Method: "POST", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: api.GenerateCreate},
-	"Find":       ModelRoute{Method: "GET", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: api.GenerateFind},
-	"FindAll":    ModelRoute{Method: "GET", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: api.GenerateFindAll},
-	"Update":     ModelRoute{Method: "PATCH", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: api.GenerateUpdate},
-	"UpdateAll":  ModelRoute{Method: "PATCH", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: api.GenerateUpdateAll},
-	"Replace":    ModelRoute{Method: "PUT", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: api.GenerateReplace},
-	"Destroy":    ModelRoute{Method: "DELETE", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: api.GenerateDestroy},
-	"DestroyAll": ModelRoute{Method: "DELETE", Path: "//{{.api_prefix}}/{{.model_name}}", HandlerGenerator: api.GenerateDestroyAll},
-	"Info":       ModelRoute{Method: "OPTIONS", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: api.GenerateInfo},
-}
-
 func (r *Router) Model(publicName string, modelInstance model.Model, methodRules MethodRules) {
-	allowedMethods := allowedModelMethods(methodRules)
-	for _, modelRoute := range allowedMethods {
-		r.ModelRoute(modelRoute, publicName, modelInstance)
+	allowedMethods := r.allowedModelMethods(methodRules)
+	for key, _ := range allowedMethods {
+		r.ModelRoute(key, publicName, modelInstance)
 	}
 }
 
 func (r *Router) Create(publicName string, modelInstance model.Model) {
-	r.ModelRoute(allModelMethods["Create"], publicName, modelInstance)
+	r.ModelRoute("Create", publicName, modelInstance)
 }
 
 func (r *Router) Find(publicName string, modelInstance model.Model) {
-	r.ModelRoute(allModelMethods["Find"], publicName, modelInstance)
+	r.ModelRoute("Find", publicName, modelInstance)
 }
 
 func (r *Router) FindAll(publicName string, modelInstance model.Model) {
-	r.ModelRoute(allModelMethods["FindAll"], publicName, modelInstance)
+	r.ModelRoute("FindAll", publicName, modelInstance)
 }
 
 func (r *Router) Update(publicName string, modelInstance model.Model) {
-	r.ModelRoute(allModelMethods["Update"], publicName, modelInstance)
+	r.ModelRoute("Update", publicName, modelInstance)
 }
 
 func (r *Router) UpdateAll(publicName string, modelInstance model.Model) {
-	r.ModelRoute(allModelMethods["UpdateAll"], publicName, modelInstance)
+	r.ModelRoute("UpdateAll", publicName, modelInstance)
 }
 
 func (r *Router) Replace(publicName string, modelInstance model.Model) {
-	r.ModelRoute(allModelMethods["Replace"], publicName, modelInstance)
+	r.ModelRoute("Replace", publicName, modelInstance)
 }
 
 func (r *Router) Destroy(publicName string, modelInstance model.Model) {
-	r.ModelRoute(allModelMethods["Destroy"], publicName, modelInstance)
+	r.ModelRoute("Destroy", publicName, modelInstance)
 }
 
 func (r *Router) DestroyAll(publicName string, modelInstance model.Model) {
-	r.ModelRoute(allModelMethods["DestroyAll"], publicName, modelInstance)
+	r.ModelRoute("DestroyAll", publicName, modelInstance)
 }
 
 func (r *Router) Info(publicName string, modelInstance model.Model) {
-	r.ModelRoute(allModelMethods["Info"], publicName, modelInstance)
+	r.ModelRoute("Info", publicName, modelInstance)
 }
 
 func (r *Router) Action(path string, handler httpHandler) {
@@ -134,11 +123,33 @@ func (r *Router) Trace(path string, handler httpHandler) {
 	r.appendRoute("TRACE", path, handler)
 }
 
-func (r *Router) ModelRoute(modelRoute ModelRoute, modelName string, modelInstance model.Model) {
+func (r *Router) ModelRoute(modelRouteName string, modelName string, modelInstance model.Model) {
+	modelRoute := r.modelMethods(modelRouteName).(ModelRoute)
 	modelRoute.ModelInstance = modelInstance
 	modelRoute.ModelName = modelName
 	route := convertToRoute(modelRoute)
 	r.appendRoute(route.Method, route.Path, route.Handler)
+}
+
+func (r *Router) modelMethods(name string) interface{} {
+	allModelMethods := map[string]ModelRoute{
+		"Create":     ModelRoute{Method: "POST", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: r.C.GenerateCreate},
+		"Find":       ModelRoute{Method: "GET", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: r.C.GenerateFind},
+		"FindAll":    ModelRoute{Method: "GET", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: r.C.GenerateFindAll},
+		"Update":     ModelRoute{Method: "PATCH", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: r.C.GenerateUpdate},
+		"UpdateAll":  ModelRoute{Method: "PATCH", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: r.C.GenerateUpdateAll},
+		"Replace":    ModelRoute{Method: "PUT", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: r.C.GenerateReplace},
+		"Destroy":    ModelRoute{Method: "DELETE", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: r.C.GenerateDestroy},
+		"DestroyAll": ModelRoute{Method: "DELETE", Path: "//{{.api_prefix}}/{{.model_name}}", HandlerGenerator: r.C.GenerateDestroyAll},
+		"Info":       ModelRoute{Method: "OPTIONS", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: r.C.GenerateInfo},
+	}
+	if name == "" {
+		return allModelMethods
+	}
+	if route, present := allModelMethods[name]; present {
+		return route
+	}
+	panic(fmt.Sprintf(`Bad Route Name - "%v"`, name))
 }
 
 func (r *Router) appendRoute(method string, path string, handler httpHandler) {
@@ -152,7 +163,9 @@ func (r *Router) appendRoute(method string, path string, handler httpHandler) {
 	r.Routes[path][method] = handler
 }
 
-func allowedModelMethods(rules MethodRules) (allowedMethods map[string]ModelRoute) {
+func (r *Router) allowedModelMethods(rules MethodRules) (allowedMethods map[string]ModelRoute) {
+	// TODO: this is sketchy, leftover from an older architecture, clean it up!
+	allModelMethods := r.modelMethods("").(map[string]ModelRoute)
 	if len(rules.Allow) > 0 && len(rules.Forbid) > 0 {
 		panic(fmt.Sprintf("Abort: Invalid ModelRules: %v \n Allow or Forbid cannot both contain rules.", rules))
 	}

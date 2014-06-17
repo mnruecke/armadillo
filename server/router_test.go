@@ -1,7 +1,6 @@
 package server
 
 import (
-	"github.com/repp/armadillo/api"
 	"github.com/repp/armadillo/model"
 	"github.com/repp/armadillo/test"
 	"net/http"
@@ -48,10 +47,9 @@ func TestGet(t *testing.T) {
 
 func TestModelRoute(t *testing.T) {
 	var router Router
-	modelRoute := ModelRoute{Method: "GET", Path: "/api/{{.model_name}}/", HandlerGenerator: api.GenerateFindAll}
-	router.ModelRoute(modelRoute, "mocks", &test.MockModel{})
+	router.ModelRoute("FindAll", "mocks", &test.MockModel{})
 
-	_, present := router.Routes["/api/mocks/"]["GET"]
+	_, present := router.Routes["/{{.api_prefix}}/mocks/"]["GET"]
 	test.AssertTrue(t, present)
 }
 
@@ -66,19 +64,21 @@ func TestAppendRoute(t *testing.T) {
 // No tests for other methods (ie Post()) as they're just wrappers for appendRoute()
 
 func TestAllowedModelMethods(t *testing.T) {
+	var r Router
 	ruleSet1 := MethodRules{}
-	allowedMethods1 := allowedModelMethods(ruleSet1)
-	test.AssertDeepEqual(t, allowedMethods1, allModelMethods)
+	allowedMethods1 := r.allowedModelMethods(ruleSet1)
+	// Order isn't ensured so a deep equivalency test isn't possible
+	test.AssertEqual(t, len(allowedMethods1), len(r.modelMethods("").(map[string]ModelRoute)))
 
 	ruleSet2 := MethodRules{Allow: NewSet("Create")}
-	allowedMethods2 := allowedModelMethods(ruleSet2)
+	allowedMethods2 := r.allowedModelMethods(ruleSet2)
 	_, createPresent := allowedMethods2["Create"]
 	_, deletePresent := allowedMethods2["Delete"]
 	test.AssertTrue(t, createPresent)
 	test.AssertFalse(t, deletePresent)
 
 	ruleSet3 := MethodRules{Forbid: NewSet("Delete")}
-	allowedMethods3 := allowedModelMethods(ruleSet3)
+	allowedMethods3 := r.allowedModelMethods(ruleSet3)
 	_, createPresent2 := allowedMethods3["Create"]
 	_, deletePresent2 := allowedMethods3["Delete"]
 	test.AssertTrue(t, createPresent2)
@@ -86,6 +86,7 @@ func TestAllowedModelMethods(t *testing.T) {
 }
 
 func TestConvertToRoute(t *testing.T) {
+	var r Router
 	blankModelRoute := ModelRoute{}
 	blankRoute := convertToRoute(blankModelRoute)
 	test.AssertDeepEqual(t, blankRoute, Route{})
@@ -95,11 +96,12 @@ func TestConvertToRoute(t *testing.T) {
 	noHandlerRoute := convertToRoute(blankModelRoute)
 	test.AssertDeepEqual(t, noHandlerRoute, Route{})
 
-	completeModelRoute := ModelRoute{"GET", "/{{.api_prefix}}/{{.model_name}}", api.GenerateFindAll, "tacos", &test.MockModel{}}
+	completeModelRoute := ModelRoute{"GET", "/{{.api_prefix}}/{{.model_name}}", r.C.GenerateFindAll, "tacos", &test.MockModel{}}
 	completeRoute := convertToRoute(completeModelRoute)
 	test.AssertEqual(t, completeRoute.Method, "GET")
 	test.AssertEqual(t, completeRoute.Path, "/{{.api_prefix}}/tacos")
-	test.AssertTypeMatch(t, completeRoute.Handler, new(httpHandler))
+	ok := httpHandler(completeRoute.Handler)
+	test.AssertNotEqual(t, ok, nil)
 }
 
 func TestSafeFormatPath(t *testing.T) {
