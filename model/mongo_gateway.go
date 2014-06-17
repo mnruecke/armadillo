@@ -6,17 +6,36 @@ import (
 	"reflect"
 	"strings"
 	"unicode"
+	"time"
 )
 
 type MongoGateway struct {
+	Address string
+	DbName string
+	Username string
+	Password string
 	DialInfo    *mgo.DialInfo
 	BaseSession *mgo.Session
 }
 
 func (g *MongoGateway) Initialize() error {
 	var connectionErr error
+	if g.DialInfo == nil {
+		g.InitDialInfo()
+	}
 	g.BaseSession, connectionErr = mgo.DialWithInfo(g.DialInfo)
 	return connectionErr
+}
+
+func (g *MongoGateway) InitDialInfo() {
+	g.DialInfo = &mgo.DialInfo {
+		Addrs:    []string{g.Address},
+		Direct:   true,
+		Timeout:  10 * time.Second,
+		Database: g.DbName,
+		Username: g.Username,
+		Password: g.Password,
+	}
 }
 
 func (g *MongoGateway) NewSession() *mgo.Session {
