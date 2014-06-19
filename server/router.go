@@ -11,7 +11,8 @@ import (
 
 type Router struct {
 	C api.ModelMethodConstructor
-	Routes map[string]map[string]httpHandler // Path, Method, Handler
+	Routes []Route
+	ModelRoutes []ModelRoute
 }
 
 type Route struct {
@@ -47,44 +48,44 @@ type MethodRules struct {
 func (r *Router) Model(publicName string, modelInstance model.Model, methodRules MethodRules) {
 	allowedMethods := r.allowedModelMethods(methodRules)
 	for key, _ := range allowedMethods {
-		r.ModelRoute(key, publicName, modelInstance)
+		r.appendModelRoute(key, publicName, modelInstance)
 	}
 }
 
 func (r *Router) Create(publicName string, modelInstance model.Model) {
-	r.ModelRoute("Create", publicName, modelInstance)
+	r.appendModelRoute("Create", publicName, modelInstance)
 }
 
 func (r *Router) Find(publicName string, modelInstance model.Model) {
-	r.ModelRoute("Find", publicName, modelInstance)
+	r.appendModelRoute("Find", publicName, modelInstance)
 }
 
 func (r *Router) FindAll(publicName string, modelInstance model.Model) {
-	r.ModelRoute("FindAll", publicName, modelInstance)
+	r.appendModelRoute("FindAll", publicName, modelInstance)
 }
 
 func (r *Router) Update(publicName string, modelInstance model.Model) {
-	r.ModelRoute("Update", publicName, modelInstance)
+	r.appendModelRoute("Update", publicName, modelInstance)
 }
 
 func (r *Router) UpdateAll(publicName string, modelInstance model.Model) {
-	r.ModelRoute("UpdateAll", publicName, modelInstance)
+	r.appendModelRoute("UpdateAll", publicName, modelInstance)
 }
 
 func (r *Router) Replace(publicName string, modelInstance model.Model) {
-	r.ModelRoute("Replace", publicName, modelInstance)
+	r.appendModelRoute("Replace", publicName, modelInstance)
 }
 
 func (r *Router) Destroy(publicName string, modelInstance model.Model) {
-	r.ModelRoute("Destroy", publicName, modelInstance)
+	r.appendModelRoute("Destroy", publicName, modelInstance)
 }
 
 func (r *Router) DestroyAll(publicName string, modelInstance model.Model) {
-	r.ModelRoute("DestroyAll", publicName, modelInstance)
+	r.appendModelRoute("DestroyAll", publicName, modelInstance)
 }
 
 func (r *Router) Info(publicName string, modelInstance model.Model) {
-	r.ModelRoute("Info", publicName, modelInstance)
+	r.appendModelRoute("Info", publicName, modelInstance)
 }
 
 func (r *Router) Action(path string, handler httpHandler) {
@@ -123,12 +124,16 @@ func (r *Router) Trace(path string, handler httpHandler) {
 	r.appendRoute("TRACE", path, handler)
 }
 
-func (r *Router) ModelRoute(modelRouteName string, modelName string, modelInstance model.Model) {
+func (r *Router) appendRoute(method string, path string, handler httpHandler) {
+	route := Route{method, safeFormatPath(path), handler}
+	r.Routes = append(r.Routes, route)
+}
+
+func (r *Router) appendModelRoute(modelRouteName string, modelName string, modelInstance model.Model) {
 	modelRoute := r.modelMethods(modelRouteName).(ModelRoute)
 	modelRoute.ModelInstance = modelInstance
 	modelRoute.ModelName = modelName
-	route := convertToRoute(modelRoute)
-	r.appendRoute(route.Method, route.Path, route.Handler)
+	r.ModelRoutes = append(r.ModelRoutes, modelRoute)
 }
 
 func (r *Router) modelMethods(name string) interface{} {
@@ -150,17 +155,6 @@ func (r *Router) modelMethods(name string) interface{} {
 		return route
 	}
 	panic(fmt.Sprintf(`Bad Route Name - "%v"`, name))
-}
-
-func (r *Router) appendRoute(method string, path string, handler httpHandler) {
-	path = safeFormatPath(path)
-	if r.Routes == nil {
-		r.Routes = make(map[string]map[string]httpHandler)
-	}
-	if r.Routes[path] == nil {
-		r.Routes[path] = make(map[string]httpHandler)
-	}
-	r.Routes[path][method] = handler
 }
 
 func (r *Router) allowedModelMethods(rules MethodRules) (allowedMethods map[string]ModelRoute) {
@@ -200,7 +194,7 @@ func (r *Router) allowedModelMethods(rules MethodRules) (allowedMethods map[stri
 	return
 }
 
-func convertToRoute(mr ModelRoute) Route {
+func (mr *ModelRoute) Route() Route {
 	var handler httpHandler
 	if mr.ModelInstance != nil {
 		handler = mr.HandlerGenerator(mr.ModelInstance)

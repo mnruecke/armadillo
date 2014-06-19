@@ -17,9 +17,10 @@ func TestModel(t *testing.T) {
 	mock := model.Model(&test.MockModel{7, "Test"})
 	router.Model("cat", mock, MethodRules{Allow: NewSet("Create")})
 
-	test.AssertEqual(t, len(router.Routes), 1)
-	_, present := router.Routes["/{{.api_prefix}}/cat/"]["POST"]
-	test.AssertTrue(t, present)
+	test.AssertEqual(t, len(router.ModelRoutes), 1)
+	createRoute := router.ModelRoutes[0]
+	test.AssertEqual(t, createRoute.Method, "POST")
+	test.AssertEqual(t, createRoute.ModelName, "cat")
 }
 
 func TestCreate(t *testing.T) {
@@ -27,10 +28,9 @@ func TestCreate(t *testing.T) {
 	//Create(publicName string, modelInstance model.Model) {
 	router.Create("mocks", &test.MockModel{})
 
-	_, present1 := router.Routes["/{{.api_prefix}}/mocks/"]
-	_, present2 := router.Routes["/{{.api_prefix}}/mocks/"]["POST"]
-	test.AssertTrue(t, present1)
-	test.AssertTrue(t, present2)
+	createRoute := router.ModelRoutes[0]
+	test.AssertEqual(t, createRoute.Method, "POST")
+	test.AssertEqual(t, createRoute.ModelName, "mocks")
 }
 
 // No tests for other model methods (ie Find()) as they're just wrappers for appendModelRoute()
@@ -39,26 +39,27 @@ func TestGet(t *testing.T) {
 	var router Router
 	router.Get("/test/", mockHandler)
 
-	_, present1 := router.Routes["/test/"]
-	_, present2 := router.Routes["/test/"]["GET"]
-	test.AssertTrue(t, present1)
-	test.AssertTrue(t, present2)
+	getRoute := router.Routes[0]
+	test.AssertEqual(t, getRoute.Method, "GET")
+	test.AssertEqual(t, getRoute.Path, "/test/")
 }
 
-func TestModelRoute(t *testing.T) {
+func TestAppendModelRoute(t *testing.T) {
 	var router Router
-	router.ModelRoute("FindAll", "mocks", &test.MockModel{})
+	router.appendModelRoute("FindAll", "mocks", &test.MockModel{})
 
-	_, present := router.Routes["/{{.api_prefix}}/mocks/"]["GET"]
-	test.AssertTrue(t, present)
+	findAllRoute := router.ModelRoutes[0]
+	test.AssertEqual(t, findAllRoute.Method, "GET")
+	test.AssertEqual(t, findAllRoute.ModelName, "mocks")
 }
 
 func TestAppendRoute(t *testing.T) {
 	var router Router
-	router.appendRoute("POST", "/dogs/", mockHandler)
+	router.appendRoute("POST", "/dogs", mockHandler)
 
-	_, present := router.Routes["/dogs/"]["POST"]
-	test.AssertTrue(t, present)
+	route := router.Routes[0]
+	test.AssertEqual(t, route.Method, "POST")
+	test.AssertEqual(t, route.Path, "/dogs/")
 }
 
 // No tests for other methods (ie Post()) as they're just wrappers for appendRoute()
@@ -88,16 +89,16 @@ func TestAllowedModelMethods(t *testing.T) {
 func TestConvertToRoute(t *testing.T) {
 	var r Router
 	blankModelRoute := ModelRoute{}
-	blankRoute := convertToRoute(blankModelRoute)
+	blankRoute := blankModelRoute.Route()
 	test.AssertDeepEqual(t, blankRoute, Route{})
 
 	noHandlerGeneratorRoute := ModelRoute{}
 	noHandlerGeneratorRoute.ModelInstance = &test.MockModel{}
-	noHandlerRoute := convertToRoute(blankModelRoute)
+	noHandlerRoute := blankModelRoute.Route()
 	test.AssertDeepEqual(t, noHandlerRoute, Route{})
 
 	completeModelRoute := ModelRoute{"GET", "/{{.api_prefix}}/{{.model_name}}", r.C.GenerateFindAll, "tacos", &test.MockModel{}}
-	completeRoute := convertToRoute(completeModelRoute)
+	completeRoute := completeModelRoute.Route()
 	test.AssertEqual(t, completeRoute.Method, "GET")
 	test.AssertEqual(t, completeRoute.Path, "/{{.api_prefix}}/tacos")
 	ok := httpHandler(completeRoute.Handler)
