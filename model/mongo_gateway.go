@@ -5,15 +5,15 @@ import (
 	"labix.org/v2/mgo/bson"
 	"reflect"
 	"strings"
-	"unicode"
 	"time"
+	"unicode"
 )
 
 type MongoGateway struct {
-	Address string
-	DbName string
-	Username string
-	Password string
+	Address     string
+	Database      string
+	Username    string
+	Password    string
 	DialInfo    *mgo.DialInfo
 	BaseSession *mgo.Session
 }
@@ -28,11 +28,11 @@ func (g *MongoGateway) Initialize() error {
 }
 
 func (g *MongoGateway) InitDialInfo() {
-	g.DialInfo = &mgo.DialInfo {
+	g.DialInfo = &mgo.DialInfo{
 		Addrs:    []string{g.Address},
 		Direct:   true,
 		Timeout:  10 * time.Second,
-		Database: g.DbName,
+		Database: g.Database,
 		Username: g.Username,
 		Password: g.Password,
 	}
@@ -94,7 +94,9 @@ func (g *MongoGateway) Update(m Model, updates map[string]interface{}) error {
 	s := g.NewSession()
 	defer s.Close()
 	err := collection(s, m).UpdateId(m.GetId(), updates)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	return g.FindById(m) // Todo: another trip to the db!? uggh. find a better way to map the fields in 'updates' to model
 }
 
@@ -115,13 +117,13 @@ func (g *MongoGateway) UpdateAllWhere(m Model, updates map[string]interface{}, c
 func (g *MongoGateway) DeleteWhere(m Model, conditions map[string]interface{}) error {
 	s := g.NewSession()
 	defer s.Close()
-	return collection(s,m).Remove(conditions)
+	return collection(s, m).Remove(conditions)
 }
 
 func (g *MongoGateway) DeleteById(m Model) error {
 	s := g.NewSession()
 	defer s.Close()
-	return collection(s,m).RemoveId(m.GetId())
+	return collection(s, m).RemoveId(m.GetId())
 }
 
 func (g *MongoGateway) DeleteAll(m Model) (int, error) {
@@ -131,7 +133,7 @@ func (g *MongoGateway) DeleteAll(m Model) (int, error) {
 func (g *MongoGateway) DeleteAllWhere(m Model, conditions map[string]interface{}) (int, error) {
 	s := g.NewSession()
 	defer s.Close()
-	changeInfo, err := collection(s,m).RemoveAll(conditions)
+	changeInfo, err := collection(s, m).RemoveAll(conditions)
 	if err != nil {
 		return 0, err
 	}

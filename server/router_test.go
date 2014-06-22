@@ -15,11 +15,11 @@ var mockHandler httpHandler = func(rw http.ResponseWriter, r *http.Request) {
 func TestModel(t *testing.T) {
 	var router Router
 	mock := model.Model(&test.MockModel{7, "Test"})
-	router.Model("cat", mock, MethodRules{Allow: NewSet("Create")})
+	router.Model("cat", mock, MethodRules{Allow: []string{"Create"}})
 
 	test.AssertEqual(t, len(router.ModelRoutes), 1)
 	createRoute := router.ModelRoutes[0]
-	test.AssertEqual(t, createRoute.Method, "POST")
+	test.AssertEqual(t, createRoute.Action, "Create")
 	test.AssertEqual(t, createRoute.ModelName, "cat")
 }
 
@@ -29,7 +29,7 @@ func TestCreate(t *testing.T) {
 	router.Create("mocks", &test.MockModel{})
 
 	createRoute := router.ModelRoutes[0]
-	test.AssertEqual(t, createRoute.Method, "POST")
+	test.AssertEqual(t, createRoute.Action, "Create")
 	test.AssertEqual(t, createRoute.ModelName, "mocks")
 }
 
@@ -49,7 +49,7 @@ func TestAppendModelRoute(t *testing.T) {
 	router.appendModelRoute("FindAll", "mocks", &test.MockModel{})
 
 	findAllRoute := router.ModelRoutes[0]
-	test.AssertEqual(t, findAllRoute.Method, "GET")
+	test.AssertEqual(t, findAllRoute.Action, "FindAll")
 	test.AssertEqual(t, findAllRoute.ModelName, "mocks")
 }
 
@@ -64,45 +64,27 @@ func TestAppendRoute(t *testing.T) {
 
 // No tests for other methods (ie Post()) as they're just wrappers for appendRoute()
 
+func TestSubtractSlice(t *testing.T) {
+	a := []string{"fish", "turkey", "walnut"}
+	b := []string{"turkey", "fish", "donkey"}
+	c := subtractSlice(a, b)
+	test.AssertDeepEqual(t, c, []string{"walnut"})
+}
+
 func TestAllowedModelMethods(t *testing.T) {
 	var r Router
 	ruleSet1 := MethodRules{}
 	allowedMethods1 := r.allowedModelMethods(ruleSet1)
 	// Order isn't ensured so a deep equivalency test isn't possible
-	test.AssertEqual(t, len(allowedMethods1), len(r.modelMethods("").(map[string]ModelRoute)))
+	test.AssertEqual(t, len(allowedMethods1), 9) // TODO: remove hard coded number, get list from api
 
-	ruleSet2 := MethodRules{Allow: NewSet("Create")}
+	ruleSet2 := MethodRules{Allow: []string{"Create"}}
 	allowedMethods2 := r.allowedModelMethods(ruleSet2)
-	_, createPresent := allowedMethods2["Create"]
-	_, deletePresent := allowedMethods2["Delete"]
-	test.AssertTrue(t, createPresent)
-	test.AssertFalse(t, deletePresent)
+	test.AssertEqual(t, allowedMethods2[0], "Create")
 
-	ruleSet3 := MethodRules{Forbid: NewSet("Delete")}
+	ruleSet3 := MethodRules{Forbid: []string{"Destroy"}}
 	allowedMethods3 := r.allowedModelMethods(ruleSet3)
-	_, createPresent2 := allowedMethods3["Create"]
-	_, deletePresent2 := allowedMethods3["Delete"]
-	test.AssertTrue(t, createPresent2)
-	test.AssertFalse(t, deletePresent2)
-}
-
-func TestConvertToRoute(t *testing.T) {
-	var r Router
-	blankModelRoute := ModelRoute{}
-	blankRoute := blankModelRoute.Route()
-	test.AssertDeepEqual(t, blankRoute, Route{})
-
-	noHandlerGeneratorRoute := ModelRoute{}
-	noHandlerGeneratorRoute.ModelInstance = &test.MockModel{}
-	noHandlerRoute := blankModelRoute.Route()
-	test.AssertDeepEqual(t, noHandlerRoute, Route{})
-
-	completeModelRoute := ModelRoute{"GET", "/{{.api_prefix}}/{{.model_name}}", r.C.GenerateFindAll, "tacos", &test.MockModel{}}
-	completeRoute := completeModelRoute.Route()
-	test.AssertEqual(t, completeRoute.Method, "GET")
-	test.AssertEqual(t, completeRoute.Path, "/{{.api_prefix}}/tacos")
-	ok := httpHandler(completeRoute.Handler)
-	test.AssertNotEqual(t, ok, nil)
+	test.AssertEqual(t, len(allowedMethods3), 8)
 }
 
 func TestSafeFormatPath(t *testing.T) {

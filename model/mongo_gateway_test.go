@@ -203,7 +203,7 @@ func TestUpdateAll(t *testing.T) {
 	insertTestFixture(mock2)
 	insertTestFixture(mock3)
 
-	updateCount, err := TestGateway.UpdateAll(&MockMongoModel{}, map[string]interface{}{"$set": map[string]string{"name":"Agent Smith"}})
+	updateCount, err := TestGateway.UpdateAll(&MockMongoModel{}, map[string]interface{}{"$set": map[string]string{"name": "Agent Smith"}})
 	test.AssertEqual(t, err, nil)
 	test.AssertEqual(t, updateCount, 3)
 
@@ -224,7 +224,7 @@ func TestUpdateAllWhere(t *testing.T) {
 	insertTestFixture(mock2)
 	insertTestFixture(mock3)
 
-	updates := map[string]interface{}{"$set": map[string]string{"name":"Agent Smith"}}
+	updates := map[string]interface{}{"$set": map[string]string{"name": "Agent Smith"}}
 	conditions := map[string]interface{}{"name": "Morpheus"}
 	updateCount, err := TestGateway.UpdateAllWhere(&MockMongoModel{}, updates, conditions)
 	test.AssertEqual(t, err, nil)
@@ -249,12 +249,11 @@ func TestDeleteWhere(t *testing.T) {
 	insertTestFixture(mock2)
 	insertTestFixture(mock3)
 
-
 	err := TestGateway.DeleteWhere(&MockMongoModel{}, map[string]interface{}{"name": "Dodo"})
 
 	// Look for something that shouldn't be there
 	var foundDodo MockMongoModel
-	notFound := TestGateway.NewSession().DB("").C(collectionName( mock2 )).FindId(mock2.GetId()).One(&foundDodo)
+	notFound := TestGateway.NewSession().DB("").C(collectionName(mock2)).FindId(mock2.GetId()).One(&foundDodo)
 	lemming := findMockModel(mock1.GetId())
 	test.AssertEqual(t, err, nil)
 	test.AssertEqual(t, notFound.Error(), "not found")
@@ -268,12 +267,11 @@ func TestDeleteId(t *testing.T) {
 	mock1.Initialize()
 	insertTestFixture(mock1)
 
-
 	err := TestGateway.DeleteById(mock1)
 
 	// Look for something that shouldn't be there
 	var foundHitler MockMongoModel
-	notFound := TestGateway.NewSession().DB("").C(collectionName( mock1 )).FindId(mock1.GetId()).One(&foundHitler)
+	notFound := TestGateway.NewSession().DB("").C(collectionName(mock1)).FindId(mock1.GetId()).One(&foundHitler)
 	test.AssertEqual(t, err, nil)
 	test.AssertNotEqual(t, notFound, nil)
 	test.AssertEqual(t, notFound.Error(), "not found")
@@ -294,7 +292,7 @@ func TestDeleteAll(t *testing.T) {
 
 	deleted, err := TestGateway.DeleteAll(&MockMongoModel{})
 	var foundAnimal MockMongoModel
-	notFound := TestGateway.NewSession().DB("").C(collectionName( mock1 )).FindId(mock1.GetId()).One(&foundAnimal)
+	notFound := TestGateway.NewSession().DB("").C(collectionName(mock1)).FindId(mock1.GetId()).One(&foundAnimal)
 
 	test.AssertEqual(t, err, nil)
 	test.AssertEqual(t, deleted, 3)
@@ -317,10 +315,10 @@ func TestDeleteAllWhere(t *testing.T) {
 
 	deleted, err := TestGateway.DeleteAllWhere(&MockMongoModel{}, map[string]interface{}{"name": "Dodo"})
 	var notFoundAnimal MockMongoModel
-	notFound := TestGateway.NewSession().DB("").C(collectionName( mock2 )).FindId(mock2.GetId()).One(&notFoundAnimal)
+	notFound := TestGateway.NewSession().DB("").C(collectionName(mock2)).FindId(mock2.GetId()).One(&notFoundAnimal)
 
 	var foundAnimal MockMongoModel
-	foundErr := TestGateway.NewSession().DB("").C(collectionName( mock1 )).FindId(mock1.GetId()).One(&foundAnimal)
+	foundErr := TestGateway.NewSession().DB("").C(collectionName(mock1)).FindId(mock1.GetId()).One(&foundAnimal)
 
 	test.AssertEqual(t, err, nil)
 	test.AssertEqual(t, deleted, 2)
@@ -331,12 +329,11 @@ func TestDeleteAllWhere(t *testing.T) {
 	test.AssertEqual(t, foundAnimal.Name, "Lemming")
 }
 
-
 // Helpers
 
 func findMockModel(id interface{}) MockMongoModel {
 	var foundMock MockMongoModel
-	err := TestGateway.NewSession().DB("").C(collectionName( &MockMongoModel{} )).FindId(id).One(&foundMock)
+	err := TestGateway.NewSession().DB("").C(collectionName(&MockMongoModel{})).FindId(id).One(&foundMock)
 	if err != nil {
 		panic(err)
 	}

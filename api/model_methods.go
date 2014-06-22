@@ -11,6 +11,32 @@ type ModelMethodConstructor struct {
 	Gateway model.DbGateway
 }
 
+type ModelMethod struct {
+	Method           string
+	Path             string
+	HandlerGenerator func(model.Model) func(http.ResponseWriter, *http.Request)
+}
+
+var MMC = ModelMethodConstructor{}
+var AllModelMethods = map[string]ModelMethod{
+	"Create":     ModelMethod{Method: "POST", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: MMC.GenerateCreate},
+	"Find":       ModelMethod{Method: "GET", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: MMC.GenerateFind},
+	"FindAll":    ModelMethod{Method: "GET", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: MMC.GenerateFindAll},
+	"Update":     ModelMethod{Method: "PATCH", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: MMC.GenerateUpdate},
+	"UpdateAll":  ModelMethod{Method: "PATCH", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: MMC.GenerateUpdateAll},
+	"Replace":    ModelMethod{Method: "PUT", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: MMC.GenerateReplace},
+	"Destroy":    ModelMethod{Method: "DELETE", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: MMC.GenerateDestroy},
+	"DestroyAll": ModelMethod{Method: "DELETE", Path: "//{{.api_prefix}}/{{.model_name}}", HandlerGenerator: MMC.GenerateDestroyAll},
+	"Info":       ModelMethod{Method: "OPTIONS", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: MMC.GenerateInfo},
+}
+
+func ModelMethodNames() (names []string) {
+	for key, _ := range AllModelMethods {
+		names = append(names, key)
+	}
+	return
+}
+
 func (m *ModelMethodConstructor) GenerateCreate(model model.Model) func(http.ResponseWriter, *http.Request) {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		//a.Gateway.Create(model)

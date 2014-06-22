@@ -10,8 +10,7 @@ import (
 )
 
 type Router struct {
-	C api.ModelMethodConstructor
-	Routes []Route
+	Routes      []Route
 	ModelRoutes []ModelRoute
 }
 
@@ -22,35 +21,87 @@ type Route struct {
 }
 
 type ModelRoute struct {
-	Method           string
-	Path             string
-	HandlerGenerator func(model.Model) func(http.ResponseWriter, *http.Request)
-	ModelName        string
-	ModelInstance    model.Model
+	Action        string
+	ModelName     string
+	ModelInstance model.Model
 }
 
 type httpHandler func(http.ResponseWriter, *http.Request)
-type Set map[string]struct{}
-
-func NewSet(elements ...string) Set {
-	s := make(Set)
-	for _, e := range elements {
-		s[e] = struct{}{}
-	}
-	return s
-}
 
 type MethodRules struct {
-	Allow  Set
-	Forbid Set
+	Allow  []string
+	Forbid []string
 }
 
 func (r *Router) Model(publicName string, modelInstance model.Model, methodRules MethodRules) {
 	allowedMethods := r.allowedModelMethods(methodRules)
-	for key, _ := range allowedMethods {
+	for _, key := range allowedMethods {
 		r.appendModelRoute(key, publicName, modelInstance)
 	}
 }
+
+func (r *Router) allowedModelMethods(rules MethodRules) []string {
+	allowLen := len(rules.Allow)
+	forbidLen := len(rules.Forbid)
+	allMethods := api.ModelMethodNames()
+
+	// Catch bad MethodRules
+	if allowLen > 0 && forbidLen > 0 {
+		panic(fmt.Sprintf("Abort: Invalid ModelRules: %v \n Allow or Forbid cannot both contain rules.", rules))
+	}
+
+	// If Forbidden, get diff between all methods and forbidden
+	if forbidLen > 0 {
+		return subtractSlice(allMethods, rules.Forbid)
+	}
+
+	// If Allow, just return that.
+	if allowLen > 0 {
+		return rules.Allow
+	}
+
+	// both Allow and Forbid are empty, all methods are allowed.
+	return allMethods
+}
+
+func subtractSlice(minuend, subtrahend []string) (diff []string) {
+	var found bool
+	for _, str1 := range minuend {
+		found = false
+		for _, str2 := range subtrahend {
+			if str1 == str2 {
+				found = true
+				break
+			}
+		}
+		if !found {
+			diff = append(diff, str1)
+		}
+	}
+	return
+}
+
+func (r *Router) appendRoute(method string, path string, handler httpHandler) {
+	route := Route{method, safeFormatPath(path), handler}
+	r.Routes = append(r.Routes, route)
+}
+
+func (r *Router) appendModelRoute(modelRouteName string, modelName string, modelInstance model.Model) {
+	r.ModelRoutes = append(r.ModelRoutes, ModelRoute{modelRouteName, modelName, modelInstance})
+}
+
+func safeFormatPath(path string) string {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	if !strings.HasSuffix(path, "/") {
+		path = path + "/"
+	}
+	r := regexp.MustCompile("/{2,}")
+	return r.ReplaceAllString(path, "/")
+}
+
+// Route Creation Methods
 
 func (r *Router) Create(publicName string, modelInstance model.Model) {
 	r.appendModelRoute("Create", publicName, modelInstance)
@@ -122,97 +173,4 @@ func (r *Router) Options(path string, handler httpHandler) {
 
 func (r *Router) Trace(path string, handler httpHandler) {
 	r.appendRoute("TRACE", path, handler)
-}
-
-func (r *Router) appendRoute(method string, path string, handler httpHandler) {
-	route := Route{method, safeFormatPath(path), handler}
-	r.Routes = append(r.Routes, route)
-}
-
-func (r *Router) appendModelRoute(modelRouteName string, modelName string, modelInstance model.Model) {
-	modelRoute := r.modelMethods(modelRouteName).(ModelRoute)
-	modelRoute.ModelInstance = modelInstance
-	modelRoute.ModelName = modelName
-	r.ModelRoutes = append(r.ModelRoutes, modelRoute)
-}
-
-func (r *Router) modelMethods(name string) interface{} {
-	allModelMethods := map[string]ModelRoute{
-		"Create":     ModelRoute{Method: "POST", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: r.C.GenerateCreate},
-		"Find":       ModelRoute{Method: "GET", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: r.C.GenerateFind},
-		"FindAll":    ModelRoute{Method: "GET", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: r.C.GenerateFindAll},
-		"Update":     ModelRoute{Method: "PATCH", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: r.C.GenerateUpdate},
-		"UpdateAll":  ModelRoute{Method: "PATCH", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: r.C.GenerateUpdateAll},
-		"Replace":    ModelRoute{Method: "PUT", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: r.C.GenerateReplace},
-		"Destroy":    ModelRoute{Method: "DELETE", Path: "/{{.api_prefix}}/{{.model_name}}/:id", HandlerGenerator: r.C.GenerateDestroy},
-		"DestroyAll": ModelRoute{Method: "DELETE", Path: "//{{.api_prefix}}/{{.model_name}}", HandlerGenerator: r.C.GenerateDestroyAll},
-		"Info":       ModelRoute{Method: "OPTIONS", Path: "/{{.api_prefix}}/{{.model_name}}", HandlerGenerator: r.C.GenerateInfo},
-	}
-	if name == "" {
-		return allModelMethods
-	}
-	if route, present := allModelMethods[name]; present {
-		return route
-	}
-	panic(fmt.Sprintf(`Bad Route Name - "%v"`, name))
-}
-
-func (r *Router) allowedModelMethods(rules MethodRules) (allowedMethods map[string]ModelRoute) {
-	// TODO: this is sketchy, leftover from an older architecture, clean it up!
-	allModelMethods := r.modelMethods("").(map[string]ModelRoute)
-	if len(rules.Allow) > 0 && len(rules.Forbid) > 0 {
-		panic(fmt.Sprintf("Abort: Invalid ModelRules: %v \n Allow or Forbid cannot both contain rules.", rules))
-	}
-
-	allowedMethods = make(map[string]ModelRoute)
-
-	// If Forbidden, get diff between all methods and forbidden, send results to add model routes method
-	if len(rules.Forbid) > 0 {
-		allowedMethods = allModelMethods
-		for key, _ := range rules.Forbid {
-			if _, keyExists := allowedMethods[key]; keyExists {
-				delete(allowedMethods, key)
-			}
-		}
-	}
-
-	// If Allow, loop through allow, adding routes
-	if len(rules.Allow) > 0 {
-		for key, _ := range rules.Allow {
-			route, ok := allModelMethods[key]
-			if ok {
-				allowedMethods[key] = route
-			}
-		}
-	}
-
-	// both Allow and Forbid are empty, all methods are allowed.
-	if len(rules.Allow) == len(rules.Forbid) {
-		allowedMethods = allModelMethods
-	}
-
-	return
-}
-
-func (mr *ModelRoute) Route() Route {
-	var handler httpHandler
-	if mr.ModelInstance != nil {
-		handler = mr.HandlerGenerator(mr.ModelInstance)
-	}
-	return Route{
-		mr.Method,
-		strings.Replace(mr.Path, "{{.model_name}}", mr.ModelName, 1),
-		handler,
-	}
-}
-
-func safeFormatPath(path string) string {
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	}
-	if !strings.HasSuffix(path, "/") {
-		path = path + "/"
-	}
-	r := regexp.MustCompile("/{2,}")
-	return r.ReplaceAllString(path, "/")
 }
