@@ -11,7 +11,7 @@ import (
 
 type MongoGateway struct {
 	Address     string
-	Database      string
+	Database    string
 	Username    string
 	Password    string
 	DialInfo    *mgo.DialInfo

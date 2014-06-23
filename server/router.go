@@ -33,6 +33,18 @@ type MethodRules struct {
 	Forbid []string
 }
 
+func (r *Router) PathMethodHandlerMap() map[string]map[string]httpHandler {
+	pmhMap := make(map[string]map[string]httpHandler)
+	for _, route := range r.Routes {
+		path := safeFormatPath(route.Path)
+		if pmhMap[path] == nil {
+			pmhMap[path] = make(map[string]httpHandler)
+		}
+		pmhMap[path][route.Method] = route.Handler
+	}
+	return pmhMap
+}
+
 func (r *Router) Model(publicName string, modelInstance model.Model, methodRules MethodRules) {
 	allowedMethods := r.allowedModelMethods(methodRules)
 	for _, key := range allowedMethods {

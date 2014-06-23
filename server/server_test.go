@@ -28,6 +28,7 @@ func TestConvertToRoutes(t *testing.T) {
 	}
 	routes := convertToRoutes(mockModelRoutes, mockConfig)
 	test.AssertEqual(t, len(routes), len(mockModelRoutes))
+	// Todo: this better
 }
 
 func TestExtractPathFromTemplate(t *testing.T) {
